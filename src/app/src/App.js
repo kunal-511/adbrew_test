@@ -1,61 +1,53 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./App.css";
 
-export function App() {
+function App() {
   const [todos, setTodos] = useState([]);
-  const [newTodo, setNewTodo] = useState("");
+  const [description, setDescription] = useState("");
 
-  // Fetch todos from the backend
+  // Fetch TODOs from the backend
   const fetchTodos = async () => {
     try {
-      const response = await fetch("http://localhost:8000/todos");
-      const data = await response.json();
-      console.log(data); // Log the response to verify it's an array
-      setTodos(Array.isArray(data) ? data : []);
+      const response = await axios.get("http://localhost:8000/todos/");
+      setTodos(response.data);
     } catch (error) {
-      console.error("Error fetching todos:", error);
+      console.error("Error fetching TODOs:", error);
     }
   };
 
+  // Handle form submission to create a new TODO
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post("http://localhost:8000/todos/", { description });
+      setDescription("");
+      fetchTodos();
+    } catch (error) {
+      console.error("Error creating TODO:", error);
+    }
+  };
+
+  // Fetch TODOs on component mount
   useEffect(() => {
     fetchTodos();
   }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (newTodo.trim()) {
-      try {
-        const response = await fetch("http://localhost:8000/todos", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ description: newTodo }),
-        });
-        if (response.ok) {
-          setNewTodo("");
-          fetchTodos(); // Refresh the todo list after adding a new todo
-        } else {
-          console.error("Failed to add todo");
-        }
-      } catch (error) {
-        console.error("Error adding todo:", error);
-      }
-    }
-  };
 
   return (
     <div className="App">
       <div>
         <h1>List of TODOs</h1>
-        <ul>
-          {todos.length > 0 ? (
-            todos.map((todo) => <li key={todo._id}>{todo.description}</li>)
-          ) : (
-            <li>No todos available</li>
-          )}
-        </ul>
+        {todos.length === 0 ? (
+          <p>No todos till now</p>
+        ) : (
+          <div>
+            {todos.map((todo) => (
+              <p key={todo.id}>{todo.description}</p>
+            ))}
+          </div>
+        )}
       </div>
+
       <div>
         <h1>Create a ToDo</h1>
         <form onSubmit={handleSubmit}>
@@ -64,12 +56,14 @@ export function App() {
             <input
               type="text"
               id="todo"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter TODO description"
+              required
             />
           </div>
           <div style={{ marginTop: "5px" }}>
-            <button type="submit">Add ToDo!</button>
+            <button type="submit">Add TODO</button>
           </div>
         </form>
       </div>
